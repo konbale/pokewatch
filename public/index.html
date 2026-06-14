@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PokéWatch">
+<meta name="theme-color" content="#ffd800">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<title>PokéWatch</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c28;
+  --border: #2a2a3d;
+  --yellow: #ffd800;
+  --red: #ff3d3d;
+  --blue: #4d9fff;
+  --green: #39e87a;
+  --text: #e8e8f0;
+  --muted: #6b6b85;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,216,0,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,216,0,0.025) 1px, transparent 1px);
+  background-size: 36px 36px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+  padding-bottom: calc(80px + var(--safe-bottom));
+}
+
+header {
+  padding: calc(var(--safe-top) + 16px) 20px 16px;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo-row { display: flex; align-items: center; gap: 10px; }
+.pokeball { width: 36px; height: 36px; animation: spin 8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.logo-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; letter-spacing: 2px; color: var(--yellow); line-height: 1; }
+.logo-sub { font-size: 0.6rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; font-weight: 600; }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.backend-status { font-size: 0.68rem; font-weight: 600; color: var(--muted); }
+.backend-status.online { color: var(--green); }
+.backend-status.offline { color: var(--red); }
+
+.tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: calc(var(--safe-top) + 68px);
+  z-index: 99;
+}
+.tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; letter-spacing: 0.5px; }
+.tab.active { color: var(--yellow); border-bottom-color: var(--yellow); }
+
+.section { display: none; padding: 16px 16px 0; }
+.section.active { display: block; }
+
+.install-banner {
+  background: linear-gradient(135deg, rgba(255,216,0,0.12), rgba(77,159,255,0.08));
+  border: 1px solid rgba(255,216,0,0.3);
+  border-radius: 14px; padding: 16px; margin-bottom: 16px; display: none;
+}
+.install-banner.show { display: block; }
+.install-banner h3 { font-size: 0.9rem; color: var(--yellow); margin-bottom: 6px; }
+.install-banner p { font-size: 0.8rem; color: var(--text); line-height: 1.5; }
+.install-banner .steps { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.install-step { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--muted); }
+.step-num { background: var(--yellow); color: #000; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
+
+.notif-card, .monitor-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+.notif-card h3, .monitor-card h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+.notif-card p, .monitor-card p { font-size: 0.78rem; color: var(--muted); margin-bottom: 12px; line-height: 1.4; }
+.notif-status { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 600; margin-bottom: 12px; }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.notif-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); animation: blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+.monitor-status { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.monitor-status-text { font-size: 0.82rem; font-weight: 600; }
+.monitor-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.monitor-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 2s ease-in-out infinite; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 8px; text-align: center; }
+.stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: var(--yellow); line-height: 1; }
+.stat-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-top: 3px; }
+
+.products-section h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; }
+.product-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; transition: border-color 0.2s; }
+.product-card.in-stock { border-color: rgba(57,232,122,0.5); background: linear-gradient(135deg, var(--surface), rgba(57,232,122,0.06)); }
+.product-emoji { font-size: 1.8rem; flex-shrink: 0; }
+.product-info { flex: 1; min-width: 0; }
+.product-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.product-retailer { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+.product-status-col { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.5px; padding: 3px 9px; border-radius: 100px; text-transform: uppercase; white-space: nowrap; }
+.badge-watching { background: rgba(107,107,133,0.2); color: var(--muted); }
+.badge-checking { background: rgba(77,159,255,0.15); color: var(--blue); }
+.badge-instock { background: rgba(57,232,122,0.2); color: var(--green); }
+.badge-outofstock { background: rgba(255,61,61,0.1); color: var(--red); }
+.badge-blocked { background: rgba(255,216,0,0.1); color: var(--yellow); }
+.badge-error { background: rgba(255,61,61,0.1); color: var(--red); }
+.last-checked { font-size: 0.62rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+.remove-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 4px; border-radius: 4px; transition: color 0.2s; }
+.remove-btn:active { color: var(--red); }
+
+.empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+.empty-state .big { font-size: 3rem; margin-bottom: 10px; }
+.empty-state p { font-size: 0.85rem; line-height: 1.5; }
+
+.section-heading { font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 2px; color: var(--muted); margin-bottom: 14px; }
+
+.presets-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.presets-scroll::-webkit-scrollbar { display: none; }
+.preset-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 100px; padding: 8px 14px; font-size: 0.78rem; color: var(--text); cursor: pointer; white-space: nowrap; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: all 0.15s; -webkit-user-select: none; flex-shrink: 0; }
+.preset-chip:active { border-color: var(--yellow); color: var(--yellow); transform: scale(0.97); }
+
+.form-group { margin-bottom: 12px; }
+.form-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+.form-input, .form-select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 13px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+.form-input:focus, .form-select:focus { border-color: var(--yellow); }
+.form-input::placeholder { color: var(--muted); }
+.form-input.error { border-color: var(--red); }
+
+.btn { display: block; width: 100%; background: var(--yellow); color: #000; border: none; border-radius: 12px; padding: 15px 20px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; text-align: center; transition: opacity 0.15s, transform 0.1s; -webkit-user-select: none; }
+.btn:active { opacity: 0.85; transform: scale(0.98); }
+.btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn.danger { background: var(--red); color: #fff; }
+.btn.small { padding: 10px 16px; font-size: 0.82rem; border-radius: 10px; }
+
+.settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+.settings-row { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--border); gap: 12px; }
+.settings-row:last-child { border-bottom: none; }
+.settings-label { flex: 1; }
+.settings-label strong { font-size: 0.88rem; display: block; }
+.settings-label span { font-size: 0.72rem; color: var(--muted); }
+
+.toggle { position: relative; width: 48px; height: 27px; flex-shrink: 0; }
+.toggle input { display: none; }
+.toggle-track { position: absolute; inset: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 100px; cursor: pointer; transition: all 0.2s; }
+.toggle-track::before { content: ''; position: absolute; width: 21px; height: 21px; border-radius: 50%; background: var(--muted); top: 2px; left: 2px; transition: all 0.2s; }
+.toggle input:checked + .toggle-track { background: rgba(255,216,0,0.2); border-color: var(--yellow); }
+.toggle input:checked + .toggle-track::before { background: var(--yellow); transform: translateX(21px); }
+
+.interval-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.interval-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 4px; font-size: 0.78rem; color: var(--muted); cursor: pointer; text-align: center; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all 0.15s; }
+.interval-btn.active { background: rgba(255,216,0,0.15); border-color: var(--yellow); color: var(--yellow); }
+.interval-btn:active { transform: scale(0.96); }
+
+.release-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+.release-date-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; text-align: center; flex-shrink: 0; width: 52px; }
+.release-month { font-size: 0.6rem; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 1px; }
+.release-day { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--yellow); line-height: 1; }
+.release-name { font-size: 0.88rem; font-weight: 600; }
+.release-type { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+.days-pill { margin-left: auto; flex-shrink: 0; font-size: 0.68rem; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: var(--surface2); color: var(--muted); font-family: 'DM Mono', monospace; }
+.days-pill.soon { background: rgba(255,216,0,0.12); color: var(--yellow); }
+.days-pill.past { background: rgba(57,232,122,0.1); color: var(--green); }
+
+.log-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; height: 200px; overflow-y: auto; font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--muted); }
+.log-entry { display: flex; gap: 8px; margin-bottom: 3px; }
+.log-time { flex-shrink: 0; }
+.log-msg.ok { color: var(--green); }
+.log-msg.warn { color: var(--yellow); }
+.log-msg.alert { color: var(--red); }
+.log-msg.info { color: var(--blue); }
+
+#alert-toast { position: fixed; bottom: calc(90px + var(--safe-bottom)); left: 16px; right: 16px; background: linear-gradient(135deg, rgba(255,61,61,0.95), rgba(200,0,0,0.95)); border-radius: 16px; padding: 16px 18px; display: none; flex-direction: column; gap: 8px; z-index: 999; box-shadow: 0 8px 40px rgba(255,61,61,0.4); animation: slide-up 0.3s ease; }
+#alert-toast.show { display: flex; }
+@keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.toast-title { font-weight: 700; font-size: 1rem; }
+.toast-body { font-size: 0.82rem; opacity: 0.9; }
+.toast-actions { display: flex; gap: 8px; margin-top: 4px; }
+.toast-btn { flex: 1; padding: 10px; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 0.82rem; border: none; cursor: pointer; }
+.toast-buy { background: #fff; color: #c00; }
+.toast-dismiss { background: rgba(255,255,255,0.2); color: #fff; }
+
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(19,19,26,0.97); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; padding-bottom: var(--safe-bottom); z-index: 200; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="logo-row">
+      <svg class="pokeball" viewBox="0 0 36 36" fill="none">
+        <circle cx="18" cy="18" r="16" stroke="#ffd800" stroke-width="2"/>
+        <path d="M2 18 H34" stroke="#ffd800" stroke-width="2"/>
+        <path d="M2 18 A16 16 0 0 1 34 18" fill="rgba(255,216,0,0.1)"/>
+        <circle cx="18" cy="18" r="5" fill="#13131a" stroke="#ffd800" stroke-width="2"/>
+        <circle cx="18" cy="18" r="2.5" fill="#ffd800"/>
+      </svg>
+      <div>
+        <div class="logo-title">PokéWatch</div>
+        <div class="logo-sub">Restock Monitor</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="backend-status" id="backend-status">⏳ Connecting...</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('watch')">👁 Watch</div>
+    <div class="tab" onclick="switchTab('add')">＋ Add</div>
+    <div class="tab" onclick="switchTab('releases')">📅 Releases</div>
+    <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
+  </div>
+
+  <!-- WATCH TAB -->
+  <div class="section active" id="tab-watch">
+
+    <div class="install-banner" id="install-banner">
+      <h3>📲 Install for Push Notifications</h3>
+      <p>Add PokéWatch to your Home Screen to receive alerts even when you're not in the app.</p>
+      <div class="steps">
+        <div class="install-step"><div class="step-num">1</div>Tap the Share button in Safari</div>
+        <div class="install-step"><div class="step-num">2</div>Scroll down, tap <strong style="color:var(--yellow)">"Add to Home Screen"</strong></div>
+        <div class="install-step"><div class="step-num">3</div>Tap <strong style="color:var(--yellow)">Add</strong>, then open from your home screen</div>
+      </div>
+    </div>
+
+    <div class="notif-card">
+      <h3>🔔 Push Notifications</h3>
+      <p>Get alerted on your phone the instant something is in stock — even with the app closed.</p>
+      <div class="notif-status">
+        <div class="notif-dot" id="notif-dot"></div>
+        <span id="notif-label">Not enabled</span>
+      </div>
+      <button class="btn small" id="notif-btn" onclick="setupPush()">Enable Push Notifications</button>
+    </div>
+
+    <div class="monitor-card">
+      <h3>🤖 Background Monitor</h3>
+      <p>The server checks all your products automatically. You don't need to keep this app open.</p>
+      <div class="monitor-status">
+        <div>
+          <div class="monitor-status-text" id="monitor-status-text">Loading...</div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;" id="monitor-sub">Connecting to server</div>
+        </div>
+        <div class="monitor-dot" id="monitor-dot"></div>
+      </div>
+      <button class="btn small secondary" onclick="checkNow()">🔍 Check Now</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-watching">0</div><div class="stat-label">Watching</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-checks">0</div><div class="stat-label">Checks</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-alerts">0</div><div class="stat-label">Alerts</div></div>
+    </div>
+
+    <div class="products-section">
+      <h2>Watched Products</h2>
+      <div id="products-list">
+        <div class="empty-state">
+          <div class="big">🔍</div>
+          <p>No products yet.<br>Tap <strong>+ Add</strong> to start watching.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding-bottom:8px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:var(--muted);margin-bottom:8px;">Activity Log</div>
+      <div class="log-box" id="log-box"></div>
+    </div>
+  </div>
+
+  <!-- ADD TAB -->
+  <div class="section" id="tab-add">
+    <div style="padding-bottom:8px">
+      <div class="section-heading">Quick Add</div>
+      <div class="presets-scroll">
+        <div class="preset-chip" onclick="quickAdd('Pokémon Center ETBs','Pokémon Center','https://www.pokemoncenter.com/en-us/category/elite-trainer-boxes','📦')">📦 PC Elite Trainer</div>
+        <div class="preset-chip" onclick="quickAdd('Pokémon Center Booster Boxes','Pokémon Center','https://www.pokemoncenter.com/en-us/category/booster-boxes','🎁')">🎁 PC Boosters</div>
+        <div class="preset-chip" onclick="quickAdd('Target Pokémon TCG','Target','https://www.target.com/s?searchTerm=pokemon+elite+trainer+box','🎯')">🎯 Target</div>
+        <div class="preset-chip" onclick="quickAdd('Walmart Pokémon TCG','Walmart','https://www.walmart.com/search?q=pokemon+elite+trainer+box','🏪')">🏪 Walmart</div>
+        <div class="preset-chip" onclick="quickAdd('Best Buy Pokémon','Best Buy','https://www.bestbuy.com/site/searchpage.jsp?st=pokemon+elite+trainer+box','🔵')">🔵 Best Buy</div>
+        <div class="preset-chip" onclick="quickAdd('Barnes &amp; Noble Pokémon','Barnes &amp; Noble','https://www.barnesandnoble.com/s/pokemon+elite+trainer+box','📚')">📚 Barnes &amp; Noble</div>
+        <div class="preset-chip" onclick="quickAdd(&quot;Kohl's Pokémon&quot;,&quot;Kohl's&quot;,'https://www.kohls.com/search.jsp?search=pokemon+trading+cards','🛍')">🛍 Kohl's</div>
+      </div>
+
+      <div class="section-heading">Custom Product</div>
+
+      <div class="form-group">
+        <label class="form-label">Product Name</label>
+        <input class="form-input" id="input-name" placeholder="e.g. Stellar Crown ETB" autocomplete="off"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Retailer</label>
+        <select class="form-input form-select" id="input-retailer">
+          <option>Pokémon Center</option>
+          <option>Target</option>
+          <option>Walmart</option>
+          <option>Best Buy</option>
+          <option>Barnes &amp; Noble</option>
+          <option>Kohl's</option>
+          <option>GameStop</option>
+          <option>Amazon</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Product Page URL</label>
+        <input class="form-input" id="input-url" type="url" placeholder="https://www.pokemoncenter.com/..." autocomplete="off" autocorrect="off" autocapitalize="none"/>
+      </div>
+      <button class="btn" onclick="addProduct()" style="margin-bottom:20px">+ Add to Watch List</button>
+    </div>
+  </div>
+
+  <!-- RELEASES TAB -->
+  <div class="section" id="tab-releases">
+    <div id="releases-list"></div>
+    <div style="font-size:0.72rem;color:var(--muted);text-align:center;padding:8px 0 16px;line-height:1.5;">
+      Dates are approximate and subject to change.<br>
+      Tap a release to add it to your watch list.
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="section" id="tab-settings">
+
+    <div class="section-heading">Check Interval</div>
+    <div class="settings-card" style="padding:14px;margin-bottom:16px;">
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;line-height:1.4;">How often the server checks for restocks. Longer intervals avoid bot detection on Pokémon Center.</p>
+      <div class="interval-row">
+        <div class="interval-btn" onclick="setInterval_(1)">1 min</div>
+        <div class="interval-btn active" onclick="setInterval_(3)" id="int-3">3 min</div>
+        <div class="interval-btn" onclick="setInterval_(5)">5 min</div>
+        <div class="interval-btn" onclick="setInterval_(10)">10 min</div>
+      </div>
+    </div>
+
+    <div class="section-heading">Alerts</div>
+    <div class="settings-card" style="margin-bottom:16px;">
+      <div class="settings-row">
+        <div class="settings-label"><strong>Sound Alarm</strong><span>Play chime when in-stock detected</span></div>
+        <label class="toggle"><input type="checkbox" id="toggle-sound" checked><div class="toggle-track"></div></label>
+      </div>
+      <div class="settings-row">
+        <div class="settings-label"><strong>Push Notifications</strong><span>iPhone alerts (requires install)</span></div>
+        <label class="toggle"><input type="checkbox" id="toggle-push" checked><div class="toggle-track"></div></label>
+      </div>
+    </div>
+
+    <button class="btn secondary" onclick="testAlert()" style="margin-bottom:12px">🔔 Test Alert</button>
+    <button class="btn secondary" onclick="refreshStatus()">🔄 Refresh Status</button>
+
+    <div style="margin-top:20px;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;">
+      <div style="font-size:0.78rem;color:var(--muted);line-height:1.6;">
+        <strong style="color:var(--text);display:block;margin-bottom:6px;">ℹ️ About PokéWatch</strong>
+        PokéWatch uses a real Chrome browser to check product pages — the same way you would manually. It detects "Add to Cart" vs "Sold Out" and fires alerts instantly. You still click Buy; this just gets you there in seconds.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="alert-toast">
+  <div class="toast-title" id="toast-title">🚨 IN STOCK!</div>
+  <div class="toast-body" id="toast-body">Tap to buy now!</div>
+  <div class="toast-actions">
+    <button class="toast-btn toast-buy" id="toast-buy-btn">🛒 Buy Now</button>
+    <button class="toast-btn toast-dismiss" onclick="closeToast()">Dismiss</button>
+  </div>
+</div>
+
+<script>
+const API = '';
+let products = [];
+let pushSub = null;
+let vapidKey = null;
+let currentTab = 'watch';
+let alertUrl = '/';
+
+function switchTab(tab) {
+  currentTab = tab;
+  const tabs = ['watch','add','releases','settings'];
+  document.querySelectorAll('.tab').forEach((el, i) => el.classList.toggle('active', tabs[i] === tab));
+  document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function log(msg, type = 'info') {
+  const box = document.getElementById('log-box');
+  const t = new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const el = document.createElement('div');
+  el.className = 'log-entry';
+  el.innerHTML = `<span class="log-time">${t}</span><span class="log-msg ${type}">${msg}</span>`;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function refreshStatus() {
+  try {
+    const r = await fetch(`${API}/api/status`);
+    const data = await r.json();
+    const el = document.getElementById('backend-status');
+    el.textContent = '🟢 Connected';
+    el.className = 'backend-status online';
+    document.getElementById('stat-watching').textContent = data.products;
+    document.getElementById('stat-checks').textContent = data.totalChecks;
+    document.getElementById('stat-alerts').textContent = data.totalAlerts;
+    document.getElementById('monitor-dot').className = 'monitor-dot active';
+    document.getElementById('monitor-status-text').textContent = '✓ Monitoring Active';
+    const upMin = Math.floor(data.uptimeSec / 60);
+    document.getElementById('monitor-sub').textContent = `Every ${data.checkIntervalMinutes} min · Uptime ${upMin}m`;
+  } catch {
+    document.getElementById('backend-status').textContent = '🔴 Offline';
+    document.getElementById('backend-status').className = 'backend-status offline';
+    document.getElementById('monitor-status-text').textContent = 'Server offline';
+    document.getElementById('monitor-sub').textContent = 'Check your Render.com deployment';
+    document.getElementById('monitor-dot').className = 'monitor-dot';
+  }
+}
+
+async function loadProducts() {
+  try {
+    const r = await fetch(`${API}/api/products`);
+    const data = await r.json();
+    products = data.products;
+    renderProducts();
+    document.getElementById('stat-checks').textContent = data.totalChecks;
+    document.getElementById('stat-alerts').textContent = data.totalAlerts;
+    document.getElementById('stat-watching').textContent = products.length;
+  } catch { log('Failed to load products', 'warn'); }
+}
+
+function renderProducts() {
+  const list = document.getElementById('products-list');
+  if (!products.length) {
+    list.innerHTML = `<div class="empty-state"><div class="big">🔍</div><p>No products yet.<br>Tap <strong>+ Add</strong> to start watching.</p></div>`;
+    return;
+  }
+  list.innerHTML = products.map(p => {
+    const badgeClass = {'in-stock':'badge-instock','out-of-stock':'badge-outofstock','checking':'badge-checking','blocked':'badge-blocked','error':'badge-error'}[p.status] || 'badge-watching';
+    const badgeLabel = {'in-stock':'✓ IN STOCK','out-of-stock':'✗ Out of Stock','checking':'⟳ Checking','blocked':'🛡 Blocked','error':'⚠ Error','watching':'👁 Watching'}[p.status] || '👁 Watching';
+    const checked = p.lastChecked ? new Date(p.lastChecked).toLocaleTimeString() : 'Never';
+    return `<div class="product-card${p.status==='in-stock'?' in-stock':''}">
+      <div class="product-emoji">${p.emoji}</div>
+      <div class="product-info"><div class="product-name">${p.name}</div><div class="product-retailer">${p.retailer}</div></div>
+      <div class="product-status-col"><span class="badge ${badgeClass}">${badgeLabel}</span><span class="last-checked">${checked}</span><button class="remove-btn" onclick="removeProduct('${p.id}')">✕</button></div>
+    </div>`;
+  }).join('');
+}
+
+async function addProduct(name, retailer, url, emoji) {
+  const n = name || document.getElementById('input-name').value.trim();
+  const r = retailer || document.getElementById('input-retailer').value;
+  const u = url || document.getElementById('input-url').value.trim();
+  const e = emoji || '🎴';
+  if (!n || !u) {
+    if (!n) document.getElementById('input-name').classList.add('error');
+    if (!u) document.getElementById('input-url').classList.add('error');
+    return;
+  }
+  document.getElementById('input-name').classList.remove('error');
+  document.getElementById('input-url').classList.remove('error');
+  try {
+    await fetch(`${API}/api/products`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name:n, retailer:r, url:u, emoji:e }) });
+    if (!name) { document.getElementById('input-name').value=''; document.getElementById('input-url').value=''; }
+    log(`Added: ${n}`, 'ok');
+    await loadProducts();
+    if (!name) switchTab('watch');
+  } catch { log('Failed to add product', 'warn'); }
+}
+
+async function removeProduct(id) {
+  try { await fetch(`${API}/api/products/${id}`, { method:'DELETE' }); await loadProducts(); log('Product removed', 'info'); }
+  catch { log('Failed to remove product', 'warn'); }
+}
+
+function quickAdd(name, retailer, url, emoji) { addProduct(name, retailer, url, emoji); }
+
+async function checkNow() {
+  log('Manual check triggered...', 'info');
+  try {
+    await fetch(`${API}/api/check-now`, { method:'POST' });
+    log('Check running on server...', 'info');
+    setTimeout(loadProducts, 8000);
+    setTimeout(loadProducts, 15000);
+    setTimeout(loadProducts, 25000);
+  } catch { log('Failed to trigger check', 'warn'); }
+}
+
+async function setInterval_(min) {
+  document.querySelectorAll('.interval-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  try {
+    await fetch(`${API}/api/interval`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ minutes: min }) });
+    log(`Check interval set to ${min} min`, 'ok');
+  } catch { log('Failed to update interval', 'warn'); }
+}
+
+async function setupPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    alert('Push notifications require iOS 16.4+ and the app must be installed to your Home Screen.');
+    return;
+  }
+  try {
+    if (!vapidKey) {
+      const r = await fetch(`${API}/api/vapid-public-key`);
+      vapidKey = (await r.json()).key;
+    }
+    if (vapidKey === 'YOUR_PUBLIC_KEY_HERE') {
+      alert('Push notifications are not configured yet. See README.md to add your VAPID keys to Render.com.');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { alert('Please allow notifications when prompted.'); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidKey) });
+    pushSub = sub;
+    await fetch(`${API}/api/subscribe`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(sub) });
+    updatePushUI(true);
+    log('Push notifications enabled ✓', 'ok');
+  } catch (err) {
+    console.error(err);
+    log(`Push setup failed: ${err.message}`, 'warn');
+    alert(`Could not enable push notifications: ${err.message}`);
+  }
+}
+
+function updatePushUI(enabled) {
+  document.getElementById('notif-dot').className = enabled ? 'notif-dot active' : 'notif-dot';
+  document.getElementById('notif-label').textContent = enabled ? "Push enabled — you'll get alerted even when app is closed" : 'Not enabled';
+  const btn = document.getElementById('notif-btn');
+  btn.textContent = enabled ? '✓ Notifications On' : 'Enable Push Notifications';
+  btn.disabled = enabled;
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+const RELEASES = [
+  { name: 'Prismatic Evolutions', type: 'Special Set', month: 'JAN', day: 17, year: 2025, url: 'https://www.pokemoncenter.com' },
+  { name: 'Journey Together', type: 'Booster Set', month: 'MAR', day: 28, year: 2025, url: 'https://www.pokemoncenter.com' },
+  { name: 'Destined Rivals', type: 'Booster Set', month: 'MAY', day: 30, year: 2025, url: 'https://www.pokemoncenter.com' },
+  { name: 'Crown Zenith 2', type: 'Special Set', month: 'JUL', day: 11, year: 2025, url: 'https://www.pokemoncenter.com' },
+  { name: 'SV10 — TBD', type: 'Booster Set', month: 'SEP', day: 5, year: 2025, url: 'https://www.pokemoncenter.com' },
+  { name: 'SV11 — TBD', type: 'Booster Set', month: 'NOV', day: 7, year: 2025, url: 'https://www.pokemoncenter.com' },
+];
+
+function renderReleases() {
+  const now = new Date();
+  document.getElementById('releases-list').innerHTML = RELEASES.map(r => {
+    const d = new Date(`${r.month} ${r.day} ${r.year}`);
+    const diff = Math.ceil((d - now) / 86400000);
+    const pillClass = diff < 0 ? 'past' : diff <= 14 ? 'soon' : '';
+    const pillLabel = diff < 0 ? 'Released' : `${diff}d`;
+    return `<div class="release-card" onclick="quickAdd('${r.name}','Pokémon Center','${r.url}','🎴')" style="cursor:pointer">
+      <div class="release-date-box"><div class="release-month">${r.month}</div><div class="release-day">${r.day}</div></div>
+      <div><div class="release-name">${r.name}</div><div class="release-type">${r.type} · ${r.year}</div></div>
+      <div class="days-pill ${pillClass}">${pillLabel}</div>
+    </div>`;
+  }).join('');
+}
+
+function showToast(title, body, url) {
+  alertUrl = url;
+  document.getElementById('toast-title').textContent = title;
+  document.getElementById('toast-body').textContent = body;
+  document.getElementById('toast-buy-btn').onclick = () => window.open(url, '_blank');
+  document.getElementById('alert-toast').classList.add('show');
+  if (document.getElementById('toggle-sound').checked) playAlarm();
+  setTimeout(closeToast, 12000);
+}
+
+function closeToast() { document.getElementById('alert-toast').classList.remove('show'); }
+
+function testAlert() {
+  showToast('🚨 IN STOCK: Test Product', 'This is what your alert will look like!', '/');
+  log('Test alert fired', 'alert');
+}
+
+function playAlarm() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523,659,784,1047,784,1047];
+    let t = ctx.currentTime;
+    notes.forEach(f => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(0.3, t);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+      o.start(t); o.stop(t + 0.2); t += 0.15;
+    });
+  } catch(e) {}
+}
+
+function checkInstallState() {
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (!isStandalone) document.getElementById('install-banner').classList.add('show');
+}
+
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) { pushSub = sub; updatePushUI(true); log('Push subscription restored', 'ok'); }
+  } catch (e) { console.error('[SW] Registration failed:', e); }
+}
+
+registerSW();
+checkInstallState();
+renderReleases();
+refreshStatus();
+loadProducts();
+log('PokéWatch started', 'info');
+
+setInterval(async () => { await loadProducts(); await refreshStatus(); }, 30000);
+if (Notification.permission === 'granted') updatePushUI(true);
+</script>
+</body>
+</html>
